@@ -1,120 +1,33 @@
-name: Deploy to GitHub Pagesname: Deploy to GitHub Pagesname: Deploy to GitHub Pages
-
-
+name: Deploy to GitHub Pages
 
 on:
-
   push:
-
-    branches: [main]on:on:
-
+    branches: [main]
   workflow_dispatch:
 
-  push:  push:
-
 permissions:
-
-  contents: write    branches: [main]    branches: [main]
-
-
-
-jobs:  workflow_dispatch:  workflow_dispatch:
-
-  deploy:
-
-    runs-on: ubuntu-latest
-
-    steps:
-
-      - name: Checkout# Required for pushing to gh-pages branchpermissions:
-
-        uses: actions/checkout@v4
-
-permissions:  contents: read
-
-      - name: Setup Bun
-
-        uses: oven-sh/setup-bun@v2  contents: write  pages: write
-
-
-
-      - name: Install dependencies  id-token: write
-
-        run: bun install --frozen-lockfile
+  contents: write
 
 jobs:
-
-      - name: Build
-
-        run: bun run build  deploy:concurrency:
-
-        env:
-
-          BASE_PATH: /${{ github.event.repository.name }}/    runs-on: ubuntu-latest  group: pages
-
-
-
-      - name: Deploy to gh-pages    steps:  cancel-in-progress: false
-
-        uses: peaceiris/actions-gh-pages@v4
-
-        with:      - name: Checkout
-
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-
-          publish_dir: ./dist        uses: actions/checkout@v4jobs:
-
-
   deploy:
-
-      - name: Setup Bun    runs-on: ubuntu-latest
-
-        uses: oven-sh/setup-bun@v2    environment:
-
-      name: github-pages
-
-      - name: Install dependencies      url: ${{ steps.deployment.outputs.page_url }}
-
-        run: bun install --frozen-lockfile    steps:
-
+    runs-on: ubuntu-latest
+    steps:
       - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build        uses: actions/checkout@v4
-
-        run: bun run build
-
-        env:      - name: Setup Bun
-
-          # Build with the correct base path for GitHub Pages        uses: oven-sh/setup-bun@v2
-
-          BASE_PATH: /${{ github.event.repository.name }}/
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-
-      - name: Deploy to gh-pages        run: bun install --frozen-lockfile
-
-        uses: peaceiris/actions-gh-pages@v4
-
-        with:      - name: Configure Pages
-
-          github_token: ${{ secrets.GITHUB_TOKEN }}        id: pages
-
-          publish_dir: ./dist        uses: actions/configure-pages@v5
-
-          cname: false        with:
-
-          enablement: true
+        run: bun install --frozen-lockfile
 
       - name: Build
         run: bun run build
         env:
-          BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          BASE_PATH: /${{ github.event.repository.name }}/
 
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: ./dist
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
