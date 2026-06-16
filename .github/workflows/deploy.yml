@@ -1,39 +1,75 @@
-name: Deploy to GitHub Pages
+name: Deploy to GitHub Pagesname: Deploy to GitHub Pages
 
-on:
-  push:
-    branches: [main]
-  workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
+
+on:on:
+
+  push:  push:
+
+    branches: [main]    branches: [main]
+
+  workflow_dispatch:  workflow_dispatch:
+
+
+
+# Required for pushing to gh-pages branchpermissions:
+
+permissions:  contents: read
+
+  contents: write  pages: write
+
   id-token: write
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
 
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+  deploy:concurrency:
+
+    runs-on: ubuntu-latest  group: pages
+
+    steps:  cancel-in-progress: false
+
+      - name: Checkout
+
+        uses: actions/checkout@v4jobs:
+
+  deploy:
+
+      - name: Setup Bun    runs-on: ubuntu-latest
+
+        uses: oven-sh/setup-bun@v2    environment:
+
+      name: github-pages
+
+      - name: Install dependencies      url: ${{ steps.deployment.outputs.page_url }}
+
+        run: bun install --frozen-lockfile    steps:
+
+      - name: Checkout
+
+      - name: Build        uses: actions/checkout@v4
+
+        run: bun run build
+
+        env:      - name: Setup Bun
+
+          # Build with the correct base path for GitHub Pages        uses: oven-sh/setup-bun@v2
+
+          BASE_PATH: /${{ github.event.repository.name }}/
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
 
-      - name: Configure Pages
-        id: pages
-        uses: actions/configure-pages@v5
-        with:
+      - name: Deploy to gh-pages        run: bun install --frozen-lockfile
+
+        uses: peaceiris/actions-gh-pages@v4
+
+        with:      - name: Configure Pages
+
+          github_token: ${{ secrets.GITHUB_TOKEN }}        id: pages
+
+          publish_dir: ./dist        uses: actions/configure-pages@v5
+
+          cname: false        with:
+
           enablement: true
 
       - name: Build
