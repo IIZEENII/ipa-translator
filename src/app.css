@@ -1,0 +1,70 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Cascadia Code', ui-monospace, 'SF Mono', Consolas, monospace;
+
+  --color-brand-50: #f5f0ff;
+  --color-brand-100: #ede5ff;
+  --color-brand-200: #dccbff;
+  --color-brand-300: #c4a3ff;
+  --color-brand-400: #a96fff;
+  --color-brand-500: #8b3bff;
+  --color-brand-600: #7a1ff0;
+  --color-brand-700: #6717c9;
+  --color-brand-800: #5516a3;
+  --color-brand-900: #461683;
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  scrollbar-width: thin;
+}
+
+/* IPA glyphs render most reliably with a font that has full phonetic coverage. */
+.font-ipa {
+  font-family:
+    'Charis SIL', 'Doulos SIL', 'Gentium Plus', 'Noto Serif', 'Times New Roman',
+    serif;
+  font-feature-settings: 'kern' 1;
+}
+
+/* Slim, themed scrollbar for the drawer / panels. */
+.scroll-thin {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-brand-400) transparent;
+}
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-brand-400);
+  border-radius: 9999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* Respect users who prefer reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
