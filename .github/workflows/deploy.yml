@@ -1,36 +1,69 @@
-name: Deploy to GitHub Pagesname: Deploy to GitHub Pages
+name: Deploy to GitHub Pagesname: Deploy to GitHub Pagesname: Deploy to GitHub Pages
 
 
 
-on:on:
+on:
+
+  push:
+
+    branches: [main]on:on:
+
+  workflow_dispatch:
 
   push:  push:
 
-    branches: [main]    branches: [main]
+permissions:
 
-  workflow_dispatch:  workflow_dispatch:
+  contents: write    branches: [main]    branches: [main]
 
 
 
-# Required for pushing to gh-pages branchpermissions:
+jobs:  workflow_dispatch:  workflow_dispatch:
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout# Required for pushing to gh-pages branchpermissions:
+
+        uses: actions/checkout@v4
 
 permissions:  contents: read
 
-  contents: write  pages: write
+      - name: Setup Bun
 
-  id-token: write
+        uses: oven-sh/setup-bun@v2  contents: write  pages: write
+
+
+
+      - name: Install dependencies  id-token: write
+
+        run: bun install --frozen-lockfile
 
 jobs:
 
-  deploy:concurrency:
+      - name: Build
 
-    runs-on: ubuntu-latest  group: pages
+        run: bun run build  deploy:concurrency:
 
-    steps:  cancel-in-progress: false
+        env:
 
-      - name: Checkout
+          BASE_PATH: /${{ github.event.repository.name }}/    runs-on: ubuntu-latest  group: pages
 
-        uses: actions/checkout@v4jobs:
+
+
+      - name: Deploy to gh-pages    steps:  cancel-in-progress: false
+
+        uses: peaceiris/actions-gh-pages@v4
+
+        with:      - name: Checkout
+
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+          publish_dir: ./dist        uses: actions/checkout@v4jobs:
+
 
   deploy:
 
