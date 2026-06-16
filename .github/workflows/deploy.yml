@@ -33,6 +33,9 @@ jobs:
       - name: Configure Pages
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          # Enable Pages automatically if not enabled yet
+          enablement: true
 
       - name: Build
         run: bun run build
