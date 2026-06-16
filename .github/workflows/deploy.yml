@@ -17,6 +17,9 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +34,6 @@ jobs:
         id: pages
         uses: actions/configure-pages@v5
         with:
-          # Enable Pages automatically if not enabled yet
           enablement: true
 
       - name: Build
