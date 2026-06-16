@@ -13,7 +13,8 @@
     type TranscriptionResult,
   } from './lib/ipa';
 
-  const SAMPLE = 'How\u2019s it going?';
+  const SAMPLE =
+    'Would you have told them to put the little bottle of water on the table or leave it there later?';
 
   let text = $state(SAMPLE);
   let flags = $state<RuleFlags>({ ...DEFAULT_FLAGS });
@@ -27,7 +28,7 @@
 
   const RULES: { key: keyof RuleFlags; label: string; ex: string }[] = [
     { key: 'weakForms', label: 'Weak forms', ex: 'to \u2192 t\u0259 \u00b7 and \u2192 \u0259n' },
-    { key: 'flapping', label: 'T / D flapping', ex: 'water \u2192 \u02c8w\u0254\u027e\u025d' },
+    { key: 'flapping', label: 'T / D flapping', ex: 'water \u2192 \u02c8w\u0254\u027e\u025a' },
     { key: 'yodCoalescence', label: 'Yod coalescence', ex: 'did you \u2192 d\u026ad\u0292u' },
     { key: 'assimilation', label: 'Place assimilation', ex: 'ten boys \u2192 t\u025bm b\u0254\u026az' },
     { key: 'elision', label: 'Elision (drop t / d)', ex: 'last night \u2192 l\u00e6s na\u026at' },
@@ -35,6 +36,10 @@
     { key: 'glottalization', label: 'Glottal /t/', ex: 'that one \u2192 \u00f0\u00e6\u0294 w\u028cn' },
     { key: 'hDropping', label: 'H-dropping', ex: 'tell him \u2192 t\u025bl \u026am' },
     { key: 'linking', label: 'Linking /j/ /w/', ex: 'go on \u2192 \u0261o\u028a w\u0251n' },
+    { key: 'lateralColoring', label: 'Light / dark L', ex: 'leave \u2192 liv \u00b7 feel \u2192 fi\u026b' },
+    { key: 'syllabicConsonants', label: 'Syllabic l\u0329 / n\u0329', ex: 'little \u2192 l\u026a\u027el\u0329 \u00b7 button \u2192 b\u028c\u027en\u0329' },
+    { key: 'rhoticReduction', label: 'Unstressed \u025d \u2192 \u025a', ex: 'water \u2192 \u02c8w\u0254\u027e\u025a' },
+    { key: 'naturalRhythm', label: 'Natural rhythm', ex: 'drop stress on monosyllables' },
   ];
 
   const result = $derived.by<TranscriptionResult | null>(() =>
@@ -66,17 +71,9 @@
   }
 
   function setAll(value: boolean) {
-    flags = {
-      weakForms: value,
-      flapping: value,
-      yodCoalescence: value,
-      assimilation: value,
-      elision: value,
-      degemination: value,
-      glottalization: value,
-      hDropping: value,
-      linking: value,
-    };
+    const next = { ...flags };
+    for (const rule of RULES) next[rule.key] = value;
+    flags = next;
   }
 </script>
 

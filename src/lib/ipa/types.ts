@@ -22,6 +22,14 @@ export interface RuleFlags {
   hDropping: boolean;
   /** Insert linking /j/ or /w/ between vowels (I am → aɪ jæm, go on → ɡoʊ wɑn). */
   linking: boolean;
+  /** Light [l] before a vowel (onset), dark [ɫ] in the coda (feel → fiɫ, leave → liv). */
+  lateralColoring: boolean;
+  /** Unstressed schwa + /l,n/ → syllabic [l̩,n̩] (little → lɪɾl̩, button → bʌɾn̩). */
+  syllabicConsonants: boolean;
+  /** Unstressed /ɝ/ → /ɚ/ (water → ˈwɔɾɚ, not ˈwɔɾɝ). */
+  rhoticReduction: boolean;
+  /** Natural rhythm: drop lexical stress marks on monosyllables (told, put → no ˈ). */
+  naturalRhythm: boolean;
 }
 
 export const DEFAULT_FLAGS: RuleFlags = {
@@ -34,6 +42,10 @@ export const DEFAULT_FLAGS: RuleFlags = {
   glottalization: true,
   hDropping: true,
   linking: true,
+  lateralColoring: true,
+  syllabicConsonants: true,
+  rhoticReduction: true,
+  naturalRhythm: true,
 };
 
 /** A single transcribed word in the utterance. */

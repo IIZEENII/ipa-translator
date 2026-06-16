@@ -7,8 +7,9 @@
  * are filtered out at render time.
  *
  * Rules run in an order that respects how the processes feed each other:
- *   yod-coalescence → elision → assimilation → glottalization
- *   → degemination → flapping → linking glides
+ *   yod-coalescence → elision → assimilation → glottalization → degemination
+ *   → flapping → syllabic consonants → lateral coloring → rhotic reduction
+ *   → linking glides → natural rhythm
  *
  * Cross-word rules never apply across a clause/sentence break (`breakAfter`).
  */
@@ -16,10 +17,15 @@
 import {
   base,
   isConsonant,
+  isNucleus,
   isStress,
+  isSyllabic,
   isVowel,
   BILABIAL,
   VELAR,
+  LATERAL,
+  SYLLABIC_MARK,
+  SYLLABIC_N_LEFT,
   FRONT_GLIDE_VOWELS,
   BACK_GLIDE_VOWELS,
   FLAP_LEFT_CONTEXT,
@@ -94,14 +100,26 @@ function yodCoalescence(words: TranscribedWord[]): void {
   });
 }
 
-/** Drop word-final /t,d/ caught between two consonants (last night → lɑs naɪt). */
+/**
+ * Drop word-final /t,d/ caught between two consonants (last night → læs naɪt).
+ * Coronal-stop deletion is most regular after obstruents and homorganic nasals;
+ * it is unreliable after a liquid, so we keep /t,d/ after /l, r, ɹ/ — preserving
+ * the /d/ in "told them", "world cup", etc.
+ */
 function elision(words: TranscribedWord[]): void {
+  const blockers = new Set(['l', 'ɫ', 'r', 'ɹ']);
   eachBoundary(words, (a, b) => {
     const left = lastReal(a);
     if (!left || (left.s !== 't' && left.s !== 'd')) return;
     const before = prevRealInWord(a, left.i);
     const after = firstReal(b);
-    if (before && after && isConsonant(before.s) && isConsonant(after.s)) {
+    if (
+      before &&
+      after &&
+      isConsonant(before.s) &&
+      !blockers.has(before.s) &&
+      isConsonant(after.s)
+    ) {
       a.phones[left.i] = '';
     }
   });
@@ -218,6 +236,116 @@ function linking(words: TranscribedWord[]): void {
   });
 }
 
+/** Symbol of the next real phone, looking across a non-broken word boundary. */
+function nextSymAcross(words: TranscribedWord[], w: number, idx: number): string | null {
+  const within = nextRealInWord(words[w], idx);
+  if (within) return within.s;
+  if (w < words.length - 1 && !words[w].breakAfter) {
+    return firstReal(words[w + 1])?.s ?? null;
+  }
+  return null;
+}
+
+/**
+ * Syllabic consonants: an unstressed /ə/ before /l/ or /n/ is absorbed and the
+ * sonorant becomes syllabic — little → lɪɾl̩, bottle → bɑɾl̩, table → teɪbl̩,
+ * button → bʌɾn̩. The schwa+sonorant must sit in a coda (word-final or before a
+ * consonant), be preceded by a consonant, and for /n/ that consonant must be a
+ * coronal (the classic environment). Runs after flapping so the flap survives.
+ */
+function syllabicConsonants(words: TranscribedWord[]): void {
+  for (let w = 0; w < words.length; w++) {
+    const word = words[w];
+    const p = word.phones;
+    for (let i = 0; i < p.length; i++) {
+      if (base(p[i]) !== 'ə') continue;
+
+      const son = nextRealInWord(word, i);
+      if (!son) continue;
+      const isLateral = LATERAL.has(son.s);
+      const isNasalN = son.s === 'n';
+      if (!isLateral && !isNasalN) continue;
+
+      const prev = prevRealInWord(word, i);
+      if (!prev || !isConsonant(prev.s)) continue;
+      if (isNasalN && !SYLLABIC_N_LEFT.has(prev.s)) continue;
+
+      // The sonorant must close its syllable within the word: it is word-final
+      // or followed by a consonant. A vowel later in the SAME word blocks it
+      // (family /fæməli/ stays), but a vowel-initial next word does not — the
+      // lexicalised syllabic of little/bottle is stable ("bottle of" → bɑɾl̩ əv).
+      const afterIn = nextRealInWord(word, son.i);
+      if (afterIn && isVowel(afterIn.s)) continue;
+
+      p[i] = ''; // absorb the schwa
+      p[son.i] = (isLateral ? 'l' : 'n') + SYLLABIC_MARK; // l̩ / n̩
+    }
+  }
+}
+
+/**
+ * Lateral allophony: /l/ is clear [l] in a syllable onset (immediately before a
+ * vowel) and dark [ɫ] in the coda (before a consonant or pause). leave → liv,
+ * feel → fiɫ, milk → mɪɫk. Syllabic [l̩] is left untouched.
+ */
+function lateralColoring(words: TranscribedWord[]): void {
+  for (let w = 0; w < words.length; w++) {
+    const p = words[w].phones;
+    for (let i = 0; i < p.length; i++) {
+      if (!LATERAL.has(base(p[i])) || isSyllabic(p[i])) continue;
+      const nextSym = nextSymAcross(words, w, i);
+      p[i] = isVowel(nextSym) ? 'l' : 'ɫ';
+    }
+  }
+}
+
+/**
+ * Rhotic reduction: a stressed-r [ɝ] in an UNSTRESSED syllable lowers to the
+ * unstressed [ɚ] — water ˈwɔtɝ → ˈwɔɾɚ, butter → ˈbʌɾɚ. A ɝ that is itself the
+ * stressed nucleus (bird /bɝd/, prefer /priˈfɝ/) is preserved.
+ */
+function rhoticReduction(words: TranscribedWord[]): void {
+  for (const word of words) {
+    const p = word.phones;
+    const stressedVowels = new Set<number>();
+    let hasStress = false;
+    for (let i = 0; i < p.length; i++) {
+      if (!isStress(p[i])) continue;
+      hasStress = true;
+      // The stressed nucleus is the first VOWEL after the mark, skipping any
+      // onset consonants (e.g. ˈwɝɫd → the nucleus is ɝ, not the onset w).
+      for (let j = i + 1; j < p.length; j++) {
+        if (p[j] === '' || isStress(p[j])) continue;
+        if (isVowel(p[j])) {
+          stressedVowels.add(j);
+          break;
+        }
+      }
+    }
+    for (let i = 0; i < p.length; i++) {
+      if (base(p[i]) !== 'ɝ') continue;
+      if (!hasStress || stressedVowels.has(i)) continue; // stressed nucleus → keep
+      p[i] = 'ɚ';
+    }
+  }
+}
+
+/**
+ * Natural rhythm: in connected speech monosyllables don't carry a lexical
+ * stress mark, so we strip ˈ/ˌ from any word with a single syllable nucleus
+ * (told, put, leave → no mark). Polysyllabic words keep their stress, which is
+ * where the mark actually disambiguates. This declutters the phrase prosody.
+ */
+function naturalRhythm(words: TranscribedWord[]): void {
+  for (const word of words) {
+    const p = word.phones;
+    let nuclei = 0;
+    for (const ph of p) if (ph !== '' && isNucleus(ph)) nuclei++;
+    if (nuclei > 1) continue;
+    for (let i = 0; i < p.length; i++) if (isStress(p[i])) p[i] = '';
+  }
+}
+
 /* ---------------------------------------------------------------------- */
 /* Orchestrator                                                            */
 /* ---------------------------------------------------------------------- */
@@ -230,5 +358,9 @@ export function applyConnectedSpeech(words: TranscribedWord[], flags: RuleFlags)
   if (flags.glottalization) glottalization(words);
   if (flags.degemination) degemination(words);
   if (flags.flapping) flapping(words);
+  if (flags.syllabicConsonants) syllabicConsonants(words);
+  if (flags.lateralColoring) lateralColoring(words);
+  if (flags.rhoticReduction) rhoticReduction(words);
   if (flags.linking) linking(words);
+  if (flags.naturalRhythm) naturalRhythm(words);
 }

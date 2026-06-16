@@ -37,6 +37,24 @@ export const BILABIAL = new Set(['p', 'b', 'm']);
 export const VELAR = new Set(['k', 'ɡ', 'g', 'ŋ']);
 export const POSTALVEOLAR = new Set(['ʃ', 'ʒ', 'tʃ', 'dʒ']);
 
+/** Lateral approximants (light /l/ and dark /ɫ/ are allophones of one phoneme). */
+export const LATERAL = new Set(['l', 'ɫ']);
+
+/**
+ * Coronal consonants after which an unstressed /ə/ + /n/ readily becomes a
+ * syllabic [n̩] (button, garden, listen, reason, kitten→kɪɾn̩). The alveolar
+ * flap [ɾ] is included so flapped words still syllabify.
+ */
+export const SYLLABIC_N_LEFT = new Set([
+  't', 'd', 'ɾ', 's', 'z', 'θ', 'ð', 'ʃ', 'ʒ', 'tʃ', 'dʒ', 'n',
+]);
+
+/** Combining mark (U+0329) that turns a sonorant into a syllabic consonant. */
+export const SYLLABIC_MARK = '\u0329';
+
+/** Combining diacritics that are stripped to recover a phone's base symbol. */
+const DIACRITICS = /[ːˑ\u0329\u032F\u0325\u030A\u02B0\u0303\u031A]/g;
+
 /** High front nuclei that trigger a linking /j/, and rounded ones a linking /w/. */
 export const FRONT_GLIDE_VOWELS = new Set(['i', 'ɪ', 'eɪ', 'aɪ', 'ɔɪ']);
 export const BACK_GLIDE_VOWELS = new Set(['u', 'ʊ', 'oʊ', 'aʊ']);
@@ -44,9 +62,9 @@ export const BACK_GLIDE_VOWELS = new Set(['u', 'ʊ', 'oʊ', 'aʊ']);
 /** Vowels plus rhotic/approximant nuclei that license T/D-flapping on the left. */
 export const FLAP_LEFT_CONTEXT = new Set([...VOWELS, 'r', 'ɹ', 'ɝ', 'ɚ']);
 
-/** Strip a trailing length mark so classification works on the base symbol. */
+/** Strip length/syllabic/other combining marks so classification works on the base symbol. */
 export function base(sym: string): string {
-  return sym.replace(/ː/g, '');
+  return sym.replace(DIACRITICS, '');
 }
 
 export function isStress(sym: string): boolean {
@@ -59,6 +77,16 @@ export function isVowel(sym: string | null | undefined): boolean {
 
 export function isConsonant(sym: string | null | undefined): boolean {
   return !!sym && CONSONANTS.has(base(sym));
+}
+
+/** True if this phone carries the syllabic mark (e.g. l̩, n̩, m̩). */
+export function isSyllabic(sym: string): boolean {
+  return sym.includes(SYLLABIC_MARK);
+}
+
+/** True if this phone is a syllable nucleus: a vowel or a syllabic consonant. */
+export function isNucleus(sym: string): boolean {
+  return isVowel(sym) || isSyllabic(sym);
 }
 
 /** Remove the surrounding `/.../` (or `[...]`) delimiters and trim whitespace. */
